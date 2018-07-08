@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+<title></title>
+<link rel="stylesheet" type="text/css" href="keyboard.css">
+
+<script>
+
+var KEY_TAG=navigator.userAgent.indexOf("Trident")>0?"DIV":"BUTTON";
+
+/* timer */
+const REPEAT_RATE = 100;
+const REPEAT_TIMEOUT = 700;
+const MENU_TIMEOUT = 200;//长按输入每个按键右上角项的等待时间
+
+/* key code */
+const KEYCODE_SHIFT=-1;
+const KEYCODE_STATE=-2;
+const KEYCODE_MENU=-3;
+const KEYCODE_SWITCH_number=-10;
+const KEYCODE_SWITCH_english=-11;
+const KEYCODE_SWITCH_number2=-12;
+const KEYCODE_SWITCH_index=-13;
+const KEYCODE_SWITCH_index0=-14;
+const KEYCODE_SWITCH_index1=-15;
+const KEYCODE_SWITCH_index2=-16;
+const KEYCODE_SWITCH_index3=-17;
+
+const KEYCODE_DEL=0x08;
+const KEYCODE_TAB=0x09;
+const KEYCODE_ENTER=0x0d;
+const KEYCODE_ESC=0x1b;
+const KEYCODE_SPACE=0x20;
+const KEYCODE_DEL_F=0xff;
+
+const KEYCODE_a=0x61
+const KEYCODE_b=0x62
+const KEYCODE_c=0x63
+const KEYCODE_d=0x64
+const KEYCODE_e=0x65
+const KEYCODE_f=0x66
+const KEYCODE_g=0x67
+const KEYCODE_h=0x68
+const KEYCODE_i=0x69
+const KEYCODE_j=0x6a
+const KEYCODE_k=0x6b
+const KEYCODE_l=0x6c
+const KEYCODE_m=0x6d
+const KEYCODE_n=0x6e
+const KEYCODE_o=0x6f
+const KEYCODE_p=0x70
+const KEYCODE_q=0x71
+const KEYCODE_r=0x72
+const KEYCODE_s=0x73
+const KEYCODE_t=0x74
+const KEYCODE_u=0x75
+const KEYCODE_v=0x76
+const KEYCODE_w=0x77
+const KEYCODE_x=0x78
+const KEYCODE_y=0x79
+const KEYCODE_z=0x7a
+const KEYCODE_A=0x41
+const KEYCODE_B=0x42
+const KEYCODE_C=0x43
+const KEYCODE_D=0x44
+const KEYCODE_E=0x45
+const KEYCODE_F=0x46
+const KEYCODE_G=0x47
+const KEYCODE_H=0x48
+const KEYCODE_I=0x49
+const KEYCODE_J=0x4a
+const KEYCODE_K=0x4b
+const KEYCODE_L=0x4c
+const KEYCODE_M=0x4d
+const KEYCODE_N=0x4e
+const KEYCODE_O=0x4f
+const KEYCODE_P=0x50
+const KEYCODE_Q=0x51
+const KEYCODE_R=0x52
+const KEYCODE_S=0x53
+const KEYCODE_T=0x54
+const KEYCODE_U=0x55
+const KEYCODE_V=0x56
+const KEYCODE_W=0x57
+const KEYCODE_X=0x58
+const KEYCODE_Y=0x59
+const KEYCODE_Z=0x5a
+
+const KEYCODE_HOME=0xff50;
+const KEYCODE_LEFT=0xff51;
+const KEYCODE_UP=0xff52;
+const KEYCODE_RIGHT=0xff53;
+const KEYCODE_DOWN=0xff54;
+
+/* old browser support */
+function getDataset(e,m){
+	var ret;
+	do {
+		if(e.dataset)
+			ret=e.dataset[m];
+		else
+			ret=e.getAttribute("data-"+m);
+		if(!ret) e=e.parentElement;
+	}while(!ret && e);
+	return ret;
+};
+
+function setDataset(e,m,v){
+	if(e.dataset)
+		e.dataset[m]=v;
+	else
+		e.setAttribute("data-"+m,v);
+}
+
+function addClass(e,c){
+	if(e.classList) {
+		e.classList.add(c);
+		return;
+	}
+	var temp=e.className;
+	var classList=temp?temp.split(/\s+/):[];
+	classList.push(c);
+	temp=classList.join(" ");
+	e.className=temp;
+}
+
+function removeClass(e,c){
+	if(e.classList) {
+		e.classList.remove(c);
+		return;
+	}
+	var temp=e.className;
+	var classList=temp?temp.split(/\s+/):[];
+	var dirty=-1;
+	for(var i=0;i<classList.length;i++){
+		if(classList[i]==c)
+			dirty=i;
+	}
+	if(dirty!=-1) {
+		classList.splice(dirty,1);
+		temp=classList.join(" ");
+		e.className=temp;
+	}
+}
+
+/* keyboard layout */
+var Keyboards = {
+	english: {
+		shifted : false,
+		alt : {
+			'1':'!',
+			'2':'@',
+			'3':'#',
+			'4':'$',
+			'5':'%',
+			'6':'^',
+			'7':'&',
+			'8':'*',
+			'9':'(',
+			'0':')',
+			'q':'?',
+			'w':'`',
+			'e':'~',
+			//'r':'1',
+			't':'<',
+			'y':'>',
+			'u':'{',
+			'i':'}',
+			'o':'[',
+			'p':']',
+			//'a':'!',
+			//'s':'@',
+			//'d':'#',
+			//'f':'$',
+			//'g':'|',
+			'h':'←',
+			'j':'↑',
+			'k':'↓',
+			'l':'→',
+			';':':',
+			'z':'|',
+			'x':'+',
+			'c':'_',
+			'v':'-',
+			'b':'=',
+			'n':'/',
+			'm':'\\',
+			',':'\'',
+			'.':'\"',
+			'中/En':'M',
+			'⇪':'→|',
+			'&nbsp':'^_^',
+			//'&#x1f310;':'|'（这个就是那个地球的符号）
+		},
+		upper: {
+			'q':'Q','w':'W','e':'E','r':'R','t':'T',
+			'y':'Y','u':'U','i':'I','o':'O','p':'P',
+			'a':'A','s':'S','d':'D','f':'F','g':'G',
+			'h':'H','j':'J','k':'K','l':'L',
+			'z':'Z','x':'X','c':'C','v':'V','b':'B',
+			'n':'N','m':'M'
+		},
+		key : [
+			[{v:'1'},{v:'2'},{v:'3'},{v:'4'},{v:'5'},
+			 {v:'6'},{v:'7'},{v:'8'},{v:'9'},{v:'0'}],
+			[{v:'q'},{v:'w'},{v:'e'},{v:'r'},{v:'t'},
+			 {v:'y'},{v:'u'},{v:'i'},{v:'o'},{v:'p'}],
+			[{v:'a'},{v:'s'},{v:'d'},{v:'f'},{v:'g'},
+			 {v:'h'},{v:'j'},{v:'k'},{v:'l'}],
+			[{v:'⇪',c:KEYCODE_SHIFT,s:true},{v:'z'},{v:'x'},{v:'c'},{v:'v'},{v:'b'},
+			{v:'n'},{v:'m'},{v:'⌫',r:2,c:KEYCODE_DEL,s:true},],
+			[{v:'中/En',c:KEYCODE_STATE,s:true},{v:'123',c:KEYCODE_SWITCH_number2,s:true},{v:';'}, {v:','},
+			 {v:'&nbsp',r:2,c:KEYCODE_SPACE,s:true},
+			 {v:'.'},
+			 {v:'符',c:KEYCODE_SWITCH_number,s:true},
+			 {v:'↵',r:2,c:KEYCODE_ENTER,s:true}]
+		]
+	},
+	number: {
+		shifted : false,
+		alt : {
+			'⇪':'→|',
+			'中/En':'M',
+			'&nbsp':'（←‿←）'
+		},
+		upper: {
+			":":"$",
+			"?":"="
+		},
+		key : [
+			[{v:'Esc',c:KEYCODE_ESC,s:true},{v:'—'},{v:'《'},{v:'》'},{v:'〈'},
+			 {v:'〉'},{v:'﹃'},{v:'﹄'},{v:'﹁'},{v:'﹂'}],
+			[{v:'1'},{v:'2'},{v:'3'},{v:'4'},{v:'5'},
+			 {v:'6'},{v:'7'},{v:'8'},{v:'9'},{v:'0'}],
+			 [{v:'!'},{v:'@'},{v:'#'},{v:'$'},{v:'%'},
+			 {v:'^'},{v:'&'},{v:'*'},{v:'('},{v:')'}],
+			[{v:'『'},{v:'』'},{v:'【'},{v:'】'},{v:'〖'},
+			{v:'〗'},{v:'〔'},{v:'〕'},{v:'⌫',r:2,c:KEYCODE_DEL,s:true}],
+			[{v:'中/En',c:KEYCODE_STATE,s:true},
+			 {v:'123',c:KEYCODE_SWITCH_number2,s:true},
+			 {v:'⇪',c:KEYCODE_SHIFT,s:true},
+			 {v:'&nbsp',r:4,c:KEYCODE_SPACE,s:false},
+			 {v:'返',c:KEYCODE_SWITCH_english,s:true},
+			 {v:'↵',r:2,c:KEYCODE_ENTER,s:true}]
+		]
+	},
+	number2: {
+		width:10,
+		index:0,
+		alt : {
+			'⇪':'→|',
+			'中/En':'M',
+		},
+		key0: [
+			[{v:'`',r:2},{v:'('},{v:')'},{v:'+'},{v:'-'},{v:'*'},{v:'/'},{v:'@',r:2}],
+			[{v:'↑',c:KEYCODE_UP},{v:'←',c:KEYCODE_LEFT},{v:'1',r:2},{v:'2',r:2},{v:'3',r:2},{v:'['},{v:']'}],
+			[{v:'↓',c:KEYCODE_DOWN},{v:'→',c:KEYCODE_RIGHT},{v:'4',r:2},{v:'5',r:2},{v:'6',r:2},{v:'{'},{v:'}'}],
+			[{v:'空格',r:2,c:KEYCODE_SPACE,s:true},{v:'7',r:2},{v:'8',r:2},{v:'9',r:2},{v:'⌫',r:2,c:KEYCODE_DEL,s:true}],
+			[{v:'中/En',c:KEYCODE_STATE,s:true},{v:'返',c:KEYCODE_SWITCH_english,s:true},{v:',',r:2},{v:'0',r:2},{v:'.',r:2},{v:'↵',r:2,c:KEYCODE_ENTER,s:true}]
+		]
+	}
+};
+Keyboards.number2.keys=[Keyboards.number2.key0,Keyboards.number2.key1,Keyboards.number2.key2];
+Keyboards.number2.key=Keyboards.number2.keys[Keyboards.number2.index];
+
+/* draw the keyboard to screen */
+var Render=(function(){
+	var _ime;
+	var _state=0;
+	var _layout;
+	var _cand=[];
+	var _page;
+	var _select=0;
+	var _hint=true;
+	
+	var _menuKey;
+	var _candidatePanel;
+	var _windowWidth;
+	
+	function _buildKey(label,className, width, dataset, altNote) {
+		var altNoteHTML = '';
+		if (altNote) {
+			altNoteHTML = '<div class="alt-note">' + altNote + '</div>';
+		}
+		if (_layout.shifted) {
+			var temp = _layout.upper[label];
+			if(temp) label=temp;
+		}
+		var content = '<button class="keyboard-key ' + className + '"';
+		dataset.forEach(function(data) {
+			content += data;
+		});
+		if(altNote) {
+			if(altNote=='"')
+				content+=' data-alt=\'"\'';
+			else
+				content+=' data-alt="'+altNote+'" ';
+		}
+		content += ' style="width: ' + width + '"';
+		content += '><span class="visual-wrapper"><span>' +
+			   label + '</span>' +altNoteHTML+ '</span></button>';
+		if(KEY_TAG=="DIV") {
+			content=content.replace(/button/g,"div");
+		}
+		return content;
+	};
+	
+	function init(keyboard){
+		_ime=document.getElementById(keyboard);
+	};
+		
+	function getWidth(){
+		return _windowWidth;
+	};
+	
+	function getHeight(){
+		return _ime.clientHeight;
+	};
+	
+	function setKeyboard(layout){
+		_layout=layout;
+	};
+	
+	function setSubKeyboard(index){
+		if(!_layout.keys)
+			return;
+		_layout.index=index;
+		_layout.key=_layout.keys[index];
+	};
+
+	function draw(){
+		var content = '';
+		var first = true;
+		var layoutWidth=_layout.width || 10;
+		var totalWidth = document.getElementById('keyboard').clientWidth;
+		var placeHolderWidth = totalWidth / layoutWidth;
+		content+="<div id='keyboard-candidate-panel'></div>";
+		_layout.key.forEach((function buildKeyboardRow(row, nrow) {
+			var firstRow = '';
+			if (first) {
+				firstRow = ' first-row';
+				first = false;
+			}
+			content += '<div class="keyboard-row' + firstRow + '">';
+			row.forEach((function buildKeyboardColumns(key, ncolumn) {
+				var keyChar = key.v;
+				if(key.c==KEYCODE_STATE) {
+					if(document.title.length>0 && _state==0)
+						keyChar=document.title.charAt(0);
+					else
+						keyChar=key.v.split('/')[_state];
+				}
+				if("c" in key) {
+					var code=key.c;
+				} else {
+					var code=(keyChar.length==1?keyChar.charCodeAt(0):0);
+					if(code>=255) code=0;
+				}
+				var className = key.s ? 'special-key' : '';
+				if(_layout.shifted && code==KEYCODE_SHIFT)
+					className+=" kbr-key-active";
+				if(code==KEYCODE_SWITCH_index)
+					className+=" kbr-key-active";
+				var ratio = key.r || 1;
+				var keyWidth = placeHolderWidth * ratio;
+				var dataset = [
+					'data-row="'+nrow+'"',
+					'data-column="'+ncolumn+'"',
+					'data-keycode="'+code+'"'
+				];
+				if(keyChar=='"') {
+					dataset.push("data-label='\"'");
+				} else {
+					dataset.push('data-label="'+keyChar+'"');
+				}
+				if(key.c==KEYCODE_STATE) {					
+					dataset.push('data-state="'+key.v+'"');
+				}
+				content+=_buildKey(keyChar,className,keyWidth+'px',
+						dataset,_layout.alt[key.v]);
+
+			}));
+			content += '</div>';
+		}));
+		_ime.innerHTML = content;
+		
+		var changeScale;
+		if(App.debug){
+			if(totalWidth>window.innerWidth || totalWidth>window.innerHeight)
+				changeScale = window.innerWidth / 72;
+			else
+				changeScale = window.innerWidth / 30;
+		} else {
+			var screen_w,screen_h;
+			if(navigator.userAgent.indexOf("Android 2")>0) {
+				screen_w=screen.width;
+				if(screen_w>320)
+					screen_h=320;
+				else
+					screen_h=480;
+			} else {
+				screen_w=screen.width/window.devicePixelRatio;
+				screen_h=screen.height/window.devicePixelRatio;
+			}
+			if(totalWidth>screen_w || totalWidth>screen_h)
+				changeScale = window.innerWidth / 72;
+			else
+				changeScale = window.innerWidth / 30;
+		}
+		document.documentElement.style.fontSize = changeScale + 'px';
+		
+		_candidatePanel = document.getElementById('keyboard-candidate-panel');
+		
+		showCandidates(_cand,_select,_page);
+		
+		_windowWidth=totalWidth;
+		return true;
+	};
+	
+	function highlightKey(key){
+		var orig=key;
+		while(key.nodeName=="SPAN")
+			key=key.parentElement;
+		if(!key) return;
+		if(!getDataset(key,"keycode")) {
+			setDataset(orig,"active","1");
+			return;
+		}
+		if(_hint)
+			addClass(key,'highlighted');
+		else
+			addClass(key,'highlighted2');
+	};
+	
+	function unHighlightKey(key){
+		var orig=key;
+		while(key && key.nodeName=="SPAN")
+			key=key.parentElement;
+		if(!key) return;
+		if(!getDataset(key,"keycode")) {
+			setDataset(orig,"active","");
+			return;
+		}
+		if(_hint)
+			removeClass(key,'highlighted');
+		else
+			removeClass(key,'highlighted2');
+	};
+	
+	function setShifted(state){
+		if(_layout.shifted==state)
+			return;
+		if(state!='locked')
+			_layout.shifted=state;
+		
+		var key = document.querySelector(KEY_TAG+'[data-keycode="' + KEYCODE_SHIFT + '"]');
+		if(!key) return;
+
+		if (state === 'locked') {
+			removeClass(key,'kbr-key-active');
+			addClass(key,'kbr-key-hold');
+		} else if (state) {
+			addClass(key,'kbr-key-active');
+			removeClass(key,'kbr-key-hold');
+		} else {
+			removeClass(key,'kbr-key-active');
+			removeClass(key,'kbr-key-hold');
+		}
+		var keys=document.querySelectorAll('.keyboard-key');
+		for (var i = 0; i < keys.length; ++i) {
+			key=keys[i];
+			var label=getDataset(key,"label");
+			if(_layout.shifted) label=_layout.upper[label];
+			if(label) {
+				key.querySelector("span > span").textContent=label;
+			}
+		}
+    };
+	
+	function isShifted(){
+		return _layout.shifted;
+	};
+	
+	function setState(state,name){
+		if(_state==state && document.title==name)
+			return;
+		if(name) document.title=name;
+		_state=state;
+
+		var key = document.querySelector(KEY_TAG+'[data-keycode="' + KEYCODE_STATE + '"]');
+		if(!key) return;
+		var label;
+		if(document.title.length>0 && _state==0)
+			label=document.title.charAt(0);
+		else
+			label=getDataset(key,"state").split('/')[_state];
+		setDataset(key,"label",label);
+		var ele=key.querySelector('span > span');
+		ele.textContent=label;
+	};
+	
+	function getState(){
+		return _state;
+	};
+	
+	function showToolbar(){
+		var list=[
+			{title:":)",tool:"1"},
+			{title:"😀",tool:"2"},
+			{title:"☀",tool:"3"},
+			{title:"🌀",tool:"4"},
+			{title:"<>",tool:"5"},
+			{title:"＿",tool:"9"}
+		];
+		_candidatePanel.innerHTML = '';
+		var fragment = document.createDocumentFragment();
+		for(var i=0;i<list.length;i++) {
+			var span = document.createElement('span');
+			span.textContent = list[i].title;
+			setDataset(span,"tool",list[i].tool);
+			addClass(span,"tool");
+			fragment.appendChild(span);
+		}
+		_candidatePanel.appendChild(fragment);
+	};
+	
+	function showCandidates(candidates,select,page,tips){
+		if(!candidates)
+			return;
+		_candidatePanel.innerHTML = '';
+		
+		if(candidates.length>0) {
+			var fragment = document.createDocumentFragment();
+			
+			candidates.forEach(function buildCandidateEntry(candidate,index) {
+				var span = document.createElement('span');
+				setDataset(span,"selection",true);
+				setDataset(span,"data",select==-1?-1:index);
+				span.textContent = candidate;
+				if(index==select)
+					addClass(span,"first");
+				if(tips && tips[index]){
+					var tipSpan=document.createElement('label');
+					addClass(tipSpan,"codetip");;
+					tipSpan.textContent=tips[index];
+					span.appendChild(tipSpan);
+				}
+				fragment.appendChild(span);
+			});
+			if(page){
+				var span = document.createElement('span');
+				setDataset(span,"selection",true);
+				setDataset(span,"page",true);
+				span.textContent = "...";
+				fragment.appendChild(span);
+			}
+			_candidatePanel.scrollLeft=0;
+			_candidatePanel.appendChild(fragment);
+			_cand=candidates;
+			_page=page;
+			_select=select;
+		} else {
+			_cand.length=0;
+			_select=0;
+			showToolbar();
+			
+		}
+	};
+	
+	function showAlternatives(key){
+		if(!key) return;
+		if(_menuKey) hideAlternatives();
+		while(key && key.nodeName!=KEY_TAG)
+			key=key.parentElement;
+		if(!key) return;
+		var altChars=getDataset(key,"alt");
+		if(!altChars || altChars.length<1)
+			return;
+		key.querySelector("span > span").textContent=altChars;
+		_menuKey=key;
+		addClass(key,'alt-show');
+	};
+	
+	function hideAlternatives(){
+		var key=_menuKey;
+		if(!key) return;
+		_menuKey=undefined;
+		var label=getDataset(key,"label");
+		if(_layout.shifted && _layout.upper[label])
+			label=_layout.upper[label];
+		if(!label) return;
+		key.querySelector("span > span").textContent=label;
+		removeClass(key,'alt-show');
+	};
+
+	function getCode(key){
+		if(_menuKey){
+			var label=getDataset(key,"alt");
+			if(label=="→|")
+				return KEYCODE_TAB;
+			else if(label=="M")
+				return KEYCODE_MENU;
+			else if(label=="#" && getDataset(key,"keycode")==KEYCODE_SWITCH_number)
+				return KEYCODE_SWITCH_number2;
+			if(label.length!=1)
+				return 0;
+			var code=label.charCodeAt(0);
+			if(code>=255) code=0;
+			return code;
+		}
+		var keyCode=parseInt(getDataset(key,"keycode"));
+		if(Render.isShifted()) {
+			var label=getDataset(key,"label");
+			if(_layout.shifted) label=_layout.upper[label];
+			if(label) {
+				if(label.length==1)
+					keyCode=label.charCodeAt(0);
+				else
+					keyCode=0;
+			}
+		}
+		return keyCode;
+	};
+	
+	function getText(key){
+		if(_menuKey) {
+			var label=getDataset(key,"alt");
+		} else {
+			var label=getDataset(key,"label");
+			if(_layout.shifted)
+				label=_layout.upper[label];
+		}
+		return label;
+	};
+	
+	function getSelect(){
+		return _select;
+	}
+	
+	function hint(on){
+		_hint=on;
+	}
+	
+	return {
+		"init":init,
+		"setKeyboard":setKeyboard,
+		"setSubKeyboard":setSubKeyboard,
+		"draw":draw,
+		"getWidth":getWidth,
+		"getHeight":getHeight,
+		"setShifted":setShifted,
+		"isShifted":isShifted,
+		"setState":setState,
+		"getState":getState,
+		"highlightKey":highlightKey,
+		"unHighlightKey":unHighlightKey,
+		"showCandidates":showCandidates,
+		"showAlternatives":showAlternatives,
+		"hideAlternatives":hideAlternatives,
+		"getCode":getCode,
+		"getText":getText,
+		"getSelect":getSelect,
+		"hint":hint
+	};
+})();
+
+/* handle mouse or touch screen events */
+var Handler = (function(){
+	var _ime;
+	var _cand;
+	var touchCount = 0;
+	var touchPresent = false;
+	var touchedKeys = {};
+	var touchStart = {};
+	var touchChanged = {};
+	var deleteTimeout;
+	var deleteInterval;
+	var menuTimeout;
+	var delayTimeout;
+	var skipKey=false;
+	var scroll=false;
+	var scrollLeft=0;
+	var scrollDone=false;
+	
+	var scrollTimer;
+	var scrollTarget;
+	
+	function setCurrentKey(value, touchId) {
+		touchedKeys[touchId].target = value;
+		touchChanged[touchId]=true;
+	}
+	
+	function setMenuTimeout(target, coords, touchId){
+		if (touchCount > 1)
+			return;
+		menuTimeout=setTimeout(function(){
+			var keycode=Render.getCode(target);
+			Render.showAlternatives(target);
+			if(keycode==KEYCODE_h || keycode==KEYCODE_j ||
+					keycode==KEYCODE_l || keycode==KEYCODE_k ||
+					keycode==KEYCODE_H || keycode==KEYCODE_J ||
+					keycode==KEYCODE_L || keycode==KEYCODE_K){
+				skipKey=true;
+				switch(keycode){
+				case KEYCODE_h:keycode=KEYCODE_LEFT|0;break;
+				case KEYCODE_j:keycode=KEYCODE_UP|0;break;
+				case KEYCODE_l:keycode=KEYCODE_RIGHT|0;break;
+				case KEYCODE_k:keycode=KEYCODE_DOWN|0;break;
+				case KEYCODE_H:keycode=KEYCODE_LEFT|0;break;
+				case KEYCODE_J:keycode=KEYCODE_UP|0;break;
+				case KEYCODE_L:keycode=KEYCODE_RIGHT|0;break;
+				case KEYCODE_K:keycode=KEYCODE_DOWN|0;break;
+				}
+				App.key(keycode);
+				deleteTimeout=setTimeout(function(){
+					App.key(keycode);
+					deleteInterval = setInterval(function() {
+						App.key(keycode);
+					}, REPEAT_RATE);
+				},REPEAT_TIMEOUT);
+			} else 
+			if(!keycode && !touchChanged[touchId]){
+				var index=getDataset(target,"data");
+				if(index===undefined)
+					return;
+				skipKey=true;
+				//App.query(index);
+			}
+		},MENU_TIMEOUT);
+	}
+	
+	function startPress(target, coords, touchId) {
+		if(scrollTimer)
+			return;
+		touchStart[touchId]=(new Date()).getTime();
+		touchChanged[touchId]=false;
+		skipKey=false;
+		App.feedback();
+		var keycode=Render.getCode(target);
+		if(keycode==KEYCODE_DEL){
+			if(Render.getSelect()==-1) {
+				skipKey=true;
+				Render.showCandidates([],0,false);
+			} else {	
+				skipKey=true;
+				App.key(keycode);
+				deleteTimeout=setTimeout(function(){
+					App.key(keycode);
+					deleteInterval = setInterval(function() {
+						App.key(keycode);
+					}, REPEAT_RATE);
+				},REPEAT_TIMEOUT);
+			}
+		} 
+		/*下面这些应该是长按触发一堆空格的项，但需要长按触发颜文字，所以注释*/
+		//else if(keycode==KEYCODE_SPACE) {
+		//	skipKey=true;
+		//	App.key(keycode);
+		//}
+		else {
+			setMenuTimeout(target,coords,touchId);
+		}
+		Render.highlightKey(target);
+	};
+	
+	function movePress(target, coords, touchId) {
+		if(scrollTimer)
+			return;
+		var oldTarget = touchedKeys[touchId].target;
+		if (!target || !oldTarget || oldTarget == target)
+			return;
+		if(target==oldTarget.parentElement)
+			return;
+		Render.hideAlternatives();
+		Render.unHighlightKey(oldTarget);
+		Render.highlightKey(target);
+		setCurrentKey(target,touchId);
+		
+		clearTimeout(deleteTimeout);
+		clearInterval(deleteInterval);
+		clearTimeout(menuTimeout);
+		
+		var keycode=Render.getCode(target);
+		if(keycode!=KEYCODE_DEL)
+			setMenuTimeout(target,coords,touchId);
+	};
+	
+	function endPress(target, coords, touchId) {
+		clearTimeout(deleteTimeout);
+		clearInterval(deleteInterval);
+		clearTimeout(menuTimeout);
+		if (!target)
+			return;
+		if(scrollTimer) {
+		} else if(getDataset(target,"selection")) {
+			if(!scroll || !scrollDone) {
+				var page=getDataset(target,"page");
+				if(page) {
+					App.page();
+				} else {
+					var index=getDataset(target,"data");
+					if(index==-1) {
+						App.text(target.textContent);
+						Render.showCandidates([],0,false);
+					}
+					else if(!touchChanged[touchId] && !skipKey) {
+						App.select(index);
+					} else if(skipKey) {
+						App.query(index);
+					}
+				}
+			}
+		} else if(getDataset(target,"tool")) {
+			var tool=getDataset(target,"tool");
+			if(tool=="1") App.voice();
+			else if(tool=="2") emoji(0);
+			else if(tool=="3") emoji(1);
+			else if(tool=="4") App.action("qrcode");
+			else if(tool=="5") editor(0);
+			else if (tool=="9") App.hide();
+		} else if(!skipKey) {
+			var keyCode=Render.getCode(target);
+			switch(keyCode){
+			case 0:
+				App.text(Render.getText(target));
+				break;
+			case KEYCODE_SHIFT:
+				Render.setShifted(!Render.isShifted());
+				break;
+			case KEYCODE_SWITCH_number:
+				Render.setKeyboard(Keyboards.number);
+				Render.draw();
+				break;
+			case KEYCODE_SWITCH_english:
+				Render.setKeyboard(Keyboards.english);
+				Render.draw();
+				break;
+			case KEYCODE_SWITCH_number2:
+				Render.setKeyboard(Keyboards.number2);
+				Render.draw();
+				break;
+			case KEYCODE_SWITCH_index:
+				break;
+			case KEYCODE_SWITCH_index0:
+				Render.setSubKeyboard(0);
+				Render.draw();
+				break;
+			case KEYCODE_SWITCH_index1:
+				Render.setSubKeyboard(1);
+				Render.draw();
+				break;
+			case KEYCODE_SWITCH_index2:
+				Render.setSubKeyboard(2);
+				Render.draw();
+				break;
+			case KEYCODE_SWITCH_index3:
+				Render.setSubKeyboard(3);
+				Render.draw();
+				break;
+			default:
+				if(keyCode)
+					App.key(keyCode);
+				break;
+			}
+		}
+		var diff=((new Date()).getTime()-touchStart[touchId]);
+		if(diff>=0 && diff<150)	{
+			delayTimeout=setTimeout(function(){
+				Render.hideAlternatives();
+				Render.unHighlightKey(target);
+				delayTimeout=undefined;
+			},10-diff);//在这调节按键延时时长（时间调整过长会导致误按键）
+		} else {
+			Render.hideAlternatives();
+			Render.unHighlightKey(target);
+		}
+	};
+	
+	function shouldWeScroll(evt){
+		if(!evt || !evt.changedTouches || evt.changedTouches.length!=1)
+			return false;
+		var touch = evt.changedTouches[0];
+		var target = touch.target;
+		if(!getDataset(target,"selection"))
+			return false;
+		var cand =_cand=document.getElementById('keyboard-candidate-panel');
+		if(!cand) return false;
+		if(cand.scrollWidth<=cand.clientWidth)
+			return false;
+		return true;
+	}
+	
+	function handleTouches(evt, callback) {
+		for (var i = 0; i < evt.changedTouches.length; i++) {
+			var touch = evt.changedTouches[i];
+			var touchId = touch.identifier;
+			callback(touch, touchId);
+		}
+	}
+	
+	function onTouchStart(evt){
+		touchPresent=true;
+		scroll=shouldWeScroll(evt);
+		evt.preventDefault();
+		if(scroll) {
+			scrollLeft=_cand.scrollLeft;
+			scrollDone=false;
+		}
+		touchCount = evt.touches.length;
+		handleTouches(evt, function handleTouchStart(touch, touchId) {
+			 var target = touch.target;
+			 target.addEventListener('touchmove', onTouchMove);
+			 target.addEventListener('touchend', onTouchEnd);
+			 target.addEventListener('touchcancel', onTouchEnd);
+			 touchedKeys[touchId] = { target: target, x: touch.pageX, y: touch.pageY };
+			 startPress(target, touch, touchId);
+		});
+	};
+	
+	function onTouchMove(evt){
+		evt.preventDefault();
+		handleTouches(evt, function handleTouchMove(touch, touchId) {
+			var x = Math.abs(touchedKeys[touchId].x - touch.pageX);
+			var y = Math.abs(touchedKeys[touchId].y - touch.pageY);
+			if (x < 5 && y < 5)
+				return;
+			if(scroll && x>4) {
+				var temp=_cand.scrollLeft+touchedKeys[touchId].x - touch.pageX;
+				if(temp<0)
+					temp=0;
+				else if(temp>_cand.scrollWidth - _cand.clientWidth)
+					temp=_cand.scrollWidth - _cand.clientWidth;
+				_cand.scrollLeft=temp;
+				scrollDone=true;
+			}
+			
+			touchedKeys[touchId].x = touch.pageX;
+			touchedKeys[touchId].y = touch.pageY;
+			var target = document.elementFromPoint(touch.pageX, touch.pageY);
+			movePress(target, touch, touchId);
+		});
+	};
+	
+	function onTouchEnd(evt){
+		evt.preventDefault();
+		touchCount = evt.touches.length;
+
+		handleTouches(evt, function handleTouchEnd(touch, touchId) {		
+			if (!touchedKeys[touchId])
+				return;
+			var target = touch.target;
+			target.removeEventListener('touchmove', onTouchMove);
+			target.removeEventListener('touchend', onTouchEnd);
+			target.removeEventListener('touchcancel', onTouchEnd);
+
+			if(scrollDone && _cand && (new Date()).getTime()-touchStart[touchId]<500)
+			{
+				var distance=0;
+				var x = scrollLeft-_cand.scrollLeft;
+				if(x>0 && _cand.scrollLeft> 0) {
+					// scroll home
+					distance=_cand.scrollLeft;
+					scrollTarget=0;
+				}
+				else if(x<0 && _cand.scrollWidth - _cand.clientWidth>_cand.scrollLeft) {
+					// scroll end
+					distance=_cand.scrollWidth - _cand.clientWidth-_cand.scrollLeft;
+					scrollTarget=_cand.scrollWidth - _cand.clientWidth;
+				}
+				if(distance>0 && !scrollTimer) {
+					var scrollCand=_cand;
+					scrollTimer=setInterval(function(){
+						var offset = scrollTarget - scrollCand.scrollLeft;
+						if(Math.abs(offset)<=1) {
+							scrollCand.scrollLeft=scrollTarget;
+							clearInterval(scrollTimer);
+							scrollCand=undefined;
+							scrollTimer=setTimeout(function(){
+								scrollTimer=undefined;
+							},400);
+							return;
+						}
+						offset /= 10;
+						if(offset>0) offset=Math.ceil(offset);
+						else offset=Math.floor(offset);
+						scrollCand.scrollLeft+=parseInt(offset);
+					},Math.abs(500/Math.log(distance/10)*Math.log(0.9)));
+				}
+			}
+			endPress(touchedKeys[touchId].target, touch, touchId);
+			
+			delete touchedKeys[touchId];
+		});
+		_cand=undefined;
+	};
+	
+	function onTouchCancel(evt){
+		if(!scroll) evt.preventDefault();
+	};
+	
+	function onMouseDown(evt){
+		evt.preventDefault();
+		if(touchPresent)
+			return;
+		if(evt.button!=0)
+			return;
+		scroll=true;
+		evt.preventDefault();
+		touchedKeys[0] = { target: evt.target, x: 0, y: 0 };
+		startPress(evt.target, evt, 0);
+	};
+	
+	function onMouseUp(evt){
+		if(touchPresent)
+			return;
+		endPress(evt.target, evt, 0);
+		touchedKeys[0]=undefined;
+	};
+	
+	function onMouseMove(evt){
+		if(touchPresent)
+			return;
+		if(!touchedKeys[0])
+			return;
+		movePress(evt.target, evt, 0);
+	};
+	
+	function onContextMenu(event){
+		event.preventDefault();
+	};
+	
+	var eventHandlers = {
+		'touchstart': onTouchStart,
+		'mousedown': onMouseDown,
+		'mouseup': onMouseUp,
+		'mousemove': onMouseMove,
+		'contextmenu': onContextMenu
+	};
+	
+	function init(keyboard){
+		_ime=document.getElementById(keyboard);
+		for (var event in eventHandlers)
+			_ime.addEventListener(event, eventHandlers[event]);
+	}
+	
+	return {
+		"init":init
+	};
+})();
+
+var App = (function(){
+	var debug=navigator.userAgent.indexOf("Android")<=0;
+	var initDone=false;
+	function init(){
+		console.log("yong:init");
+		this.initDone=true;
+	};
+	function select(i){
+		console.log("yong:select "+i);
+	};
+	function key(code){
+		console.log("yong:key "+code);
+	};
+	function text(t){
+		console.log("yong:text "+t);
+	};
+	function page(){
+		console.log("yong:page");
+	};
+	function hide(){
+		console.log("yong:hide");
+	};
+	function voice(){
+		console.log("yong:voice");
+	};
+	function feedback(){
+		console.log("yong:feedback");
+	};
+	function query(i){
+		console.log("yong:query "+i);
+	};
+	function action(type){
+		console.log("yong:action "+type);
+	}
+
+	return {
+		"debug":debug,
+		"init":init,
+		"initDone":initDone,
+		"select":select,
+		"key":key,
+		"text":text,
+		"page":page,
+		"hide":hide,
+		"voice":voice,
+		"feedback":feedback,
+		"query":query,
+		"action":action
+	};
+})();
+
+function init_keyboard(){
+	Render.init("keyboard");
+	Render.setKeyboard(Keyboards.english);
+
+	Render.draw();
+	Handler.init("keyboard");
+	App.init();
+	window.addEventListener("resize",function(){
+		if(window.innerWidth==Render.getWidth())
+			return;
+		emoji(false);
+		Render.draw();
+	});
+	if(App.debug) {
+		//Render.showCandidates(["1","2","3","4","5","6","7","8","9","0"],0,true,['a','b','c','d','e']);
+	}
+}
+
+function emoji(show){
+	overlay("emoji",show);
+}
+
+function editor(show){
+	overlay("editor",show);
+}
+
+function overlay(type,show){
+	var div=document.getElementById("keyboard-overlay");
+	if(div){
+		var cur=getDataset(div,"show");
+		document.body.removeChild(div);
+		if(cur==show)
+			return;
+	}
+	if(show===false)
+		return;
+	var cand=document.getElementById('keyboard-candidate-panel');
+	var keyboard=document.getElementById('keyboard');
+	var width=keyboard.clientWidth;
+	var height=(keyboard.clientHeight-cand.clientHeight);
+	div=document.createElement('DIV');
+	setDataset(div,"show",show);
+	div.id="keyboard-overlay";
+	div.style.left="0px";
+	div.style.top=cand.clientHeight+"px";
+	div.style.width=width+"px";
+	div.style.height=height+"px";
+	
+	var div2=document.createElement('DIV');
+	div2.style.width=keyboard.clientWidth+"px";
+	
+	div.appendChild(div2);
+	
+	addClass(div,type);
+	if(type=="emoji"){
+		var emojis=[[
+				"😀","😁","😂","😃","😄","😅","😆","😇","😈","😉",
+				"😊","😋","😌","😍","😎","😏","😐","😑","😒","😓",
+				"😔","😕","😖","😗","😘","😙","😚","😛","😜","😝",
+				"😞","😟","😠","😡","😢","😣","😤","😥","😦","😧",
+				"😨","😩","😪","😫","😬","😭","😮","😯","😰","😱",
+				"😲","😳","😴","😵","😶","😷","😸","😹","😺","😻",
+				"😼","😽","😾","😿","🙀","🙁","🙂","🙃","🙄","🙅",
+				"🙆","🙇","🙈","🙉","🙊","🙋","🙌","🙍","🙎","🙏"
+			],[
+				"☀","☁","☎","☔","☕","☝","☠","☯","♿","⚒",
+				"⚓","⚔","⚡","⚪","⚫","⚽","⚾","⛄","⛅","⛔",
+				"⛪","⛲","⛳","⛵","⛺","⛽","✅","✊","✋","✌",
+				"❄","❌","❤","🆒","🆗","🆘","🆙","🆚","🌻","🌼",
+				"🌽","🌿","🍁","🍄","🍅","🍆","🍉","🍌","🍍","🍓",
+				"🍔","🍕","🍚","🍜","🍟","🍦","🍫","🍬","🍭","🍴",
+				"🎁","🎂","🎄","🎅","🎈","🎓","👌","👍","👎","👏",
+				"🎨","🎯","🎲","🏀","🏃","🏅","🏆","🏐","🏓","🏟",
+				"🏧","🐀","🐁","🐂","🐃","🐄","🐅","🐆","🐇","🐈",
+				"🐉","🐊","🐋","🐌","🐍","🐎","🐏","🐐","🐑","🐒",
+				"🐓","🐔","🐕","🐖","🐗","🐘","🐙","🐚","🐛","🐜",
+				"🐝","🐞","🐟","🐠","🐢","🐧","👣","👫","💊","💋"
+				//,"　","　","　","　","　","　","　","　","　"
+			]];
+		for(var i=0;i<emojis[show].length;i++){
+			var one=document.createElement('button');
+			one.textContent=emojis[show][i];
+			one.style.width=width/10+"px";
+			one.style.height=height/4+"px";
+			div2.appendChild(one);
+		}
+		div2.addEventListener('touchstart',App.feedback);
+		div2.addEventListener('click',function(e){
+			var text=e.target.textContent;
+			if(!text || text=="　")
+				return;
+			App.text(text);
+		});
+	} else if(type=="editor"){
+		var actions=[
+			{
+				text:"←",
+				left: "5%",top: "30%",
+				click:function(){App.key(KEYCODE_LEFT);}
+			},
+			{
+				text:"↑",
+				left: "20%",top: "10%",
+				click:function(){App.key(KEYCODE_UP);}
+			},
+			{
+				text:"→",
+				left: "35%",top: "30%",
+				click:function(){App.key(KEYCODE_RIGHT);}
+			},
+			{
+				text:"↓",
+				left: "20%",top: "50%",
+				click:function(){App.key(KEYCODE_DOWN);}
+			},
+			{
+				text:"⌫",
+				left: "35%",top: "70%",
+				click:function(){App.key(KEYCODE_DEL);}
+			},
+			{
+				text:"Del",
+				left: "5%",top: "70%",
+				click:function(){App.key(KEYCODE_DEL_F);}
+			},
+			{
+				text:"全选",
+				left: "70%",top: "5%",
+				click:function(){App.action("selectAll");}
+			},
+			{
+				text:"复制",
+				left: "70%",top: "27%",
+				click:function(){App.action("copy");}
+			},
+			{
+				text:"剪切",
+				left: "70%",top: "49%",
+				click:function(){App.action("cut");}
+			},
+			{
+				text:"粘贴",
+				left: "70%",top: "71%",
+				click:function(){App.action("paste");}
+			}
+		];
+		div2.addEventListener('touchstart',App.feedback);
+		for(var i=0;i<actions.length;i++){
+			var one=document.createElement('button');
+			one.textContent=actions[i].text;
+			if(actions[i].symbole)
+				one.style.fontFamily='Keyboard Symbols';
+			one.style.left=actions[i].left;
+			one.style.top=actions[i].top;
+			one.addEventListener('click',actions[i].click);
+			div2.appendChild(one);
+		}
+	}
+	document.body.appendChild(div);
+	div.addEventListener('contextmenu',function(e){
+		e.preventDefault();
+	});
+}
+
+</script>
+</head>
+<body onload="init_keyboard();">
+<div id="keyboard" class="candidate-panel">
+</div>
+</body>
+</html>
