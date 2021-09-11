@@ -8,6 +8,12 @@
   src: url('fonts/Keyboard-Symbols.ttf');
 }
 
+@font-face {
+  font-family: 'TH-Feon';
+  font-weight: 600;
+  src: url('fonts/TH-Feon.woff');
+}
+
 /* Reset */
 * {
   margin: 0;
@@ -343,6 +349,7 @@ button::-moz-focus-inner {
 /* IMEs */
 
 #keyboard-candidate-panel {
+  font-family: 'TH-Feon';
   height: 3rem;
   overflow: auto;
   white-space: nowrap;
@@ -362,6 +369,7 @@ button::-moz-focus-inner {
 #keyboard-candidate-panel span {
   /*border-left: 1px solid #e8e8ff;
   border-right: 1px solid #808098;*/
+  font-family: 'TH-Feon';
   font-size: 1.6rem;
   line-height: 3rem;
   min-width: 2.5rem;
@@ -446,7 +454,7 @@ button::-moz-focus-inner {
   background: #24272D;
   width: 8rem;
   color: #B1B2B6;
-  font: 1.6rem/2.8rem Sans-serif;
+  font: 1.6rem/2.8rem 'TH-Feon', Sans-serif;
   border: 0px solid #000;
   display: inline-block;
   border-radius: 3px;
